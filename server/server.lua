@@ -89,19 +89,14 @@ function onEvent(event)
             send(socket, "card_id:"..id)
         elseif split(message, ":")[1] == "add_dns" then
             local name = split(message, ":")[2]
-            local id = uuid()
-            dns_table[name] = id
-            print("Registering ID: "..id)
-            send(socket, "register_id:"..id)
+            dns_table[name] = socket
         elseif split(message, ":")[1] == "send_mail" then
             local name = split(message, ":")[2]
             local sender = split(message, ":")[4]
             local id = split(message, ":")[3]
-            print(name)
-            print(sender)
-            for sock in pairs(getAllClientSockets()) do
-                send(sock, "recv_mail:"..id..":"..sender..":"..dns_table[name])
-            end
+            print(sender.." -> "..name)
+            print(id)
+            send(dns_table[name], "recv_mail:"..id..":"..sender)
         elseif split(message, ":")[1] == "add_bal" then
             local id = split(message, ":")[2]
             local change = split(message, ":")[3]
@@ -129,6 +124,12 @@ function onEvent(event)
                 send(socket, "accept_")
             else
                 send(socket, "deny_")
+            end
+        end
+    elseif event[1] == "connection_closed" then
+        for k, v in pairs(dns_table) do
+            if v == event[2] then
+                dns_table[k] = nil
             end
         end
     end

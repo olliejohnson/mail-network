@@ -68,56 +68,107 @@ function chargeBalance(socket)
     send(socket, "chk")
 end
 
+function remBal(socket, amount)
+    local id = getCardID()
+    send(socket, "rm_bal:"..id..":"..amount)
+    send(socket, "card_id:"..id)
+end
+
+function printCentered(text, offset)
+    local width, height = term.getSize()
+    term.setCursorPos((width - string.len(text))/2, height/2 - offset)
+    term.write(text)
+end
+
 function menu(socket)
     term.clear()
-    if data_t ~= nil and config.hostname ~= nil then
-        print("User: "..data_t.username.."\nBalance: "..data_t.balance.."\nHostname: "..config.hostname.."\n")
-    end
-    print("1. Add Card\n2. Get Data\n3. Save Server Tables\n4. Load Server Tables (WARNING: Will delete unsaved data)\n5. Erase Server Tables (WARNING: Will erase a card data)\n6. Add Balance\n7. Remove Balance\n8. Send Money")
-    if config.hostname ~= nil and not submitted_host then
-        submitted_host = true
-        hostname_selection(socket)
-    else
+    if config.dev == true then
+        if data_t ~= nil then
+            print("User: "..data_t.username.."\nBalance: "..data_t.balance)
+        end
+        if config.hostname ~= nil then
+            print("Hostname: "..config.hostname.."\n")
+        end
+        print("1. Add Card\n2. Get Data\n3. Save Server Tables\n4. Load Server Tables (WARNING: Will delete unsaved data)\n5. Erase Server Tables (WARNING: Will erase a card data)\n6. Add Balance\n7. Remove Balance\n8. Send Money")
+        if config.hostname ~= nil and not submitted_host then
+            submitted_host = true
+            hostname_selection(socket)
+        end
         print("9. Set Hostname")
-    end
-    print("10. Send Mail")
-    local option = read()
-    if option == "1" then
-        write("Username: ")
-        local username = read()
-        return send(socket, "add_card:"..username)
-    elseif option == "2" then
-        send(socket, "card_id:"..getCardID())
-        send(socket, "chk")
-    elseif option == "3" then
-        send(socket, "save_tbl")
-        send(socket, "chk")
-    elseif option == "4" then
-        send(socket, "load_tbl")
-        send(socket, "chk")
-    elseif option == "5" then
-        send(socket, "clr_tbl")
-        send(socket, "chk")
-    elseif option == "6" then
-        addBalance(socket)
-    elseif option == "7" then
-        chargeBalance(socket)
-    elseif option == "8" then
-        write("Sender Username: ")
-        local username = read()
-        write("Amount: ")
-        local change = read()
-        send(socket, "transfer:"..getCardID()..":"..username..":"..change)
-        send(socket, "chk")
-    elseif option == "9" and config.hostname == nil then
-        hostname_selection(socket)
-        send(socket, "chk")
-    elseif option == "10" then
-        write("Address: ")
-        local address = read()
-        local id = digitizer.digitize()
-        send(socket, "send_mail:"..address..":"..id..":"..config.hostname)
-        send(socket, "chk")
+        print("10. Send Mail")
+        local option = read()
+        if option == "1" then
+            write("Username: ")
+            local username = read()
+            return send(socket, "add_card:"..username)
+        elseif option == "2" then
+            send(socket, "card_id:"..getCardID())
+            send(socket, "chk")
+        elseif option == "3" then
+            send(socket, "save_tbl")
+            send(socket, "chk")
+        elseif option == "4" then
+            send(socket, "load_tbl")
+            send(socket, "chk")
+        elseif option == "5" then
+            send(socket, "clr_tbl")
+            send(socket, "chk")
+        elseif option == "6" then
+            addBalance(socket)
+        elseif option == "7" then
+            chargeBalance(socket)
+        elseif option == "8" then
+            write("Sender Username: ")
+            local username = read()
+            write("Amount: ")
+            local change = read()
+            send(socket, "transfer:"..getCardID()..":"..username..":"..change)
+            send(socket, "chk")
+        elseif option == "9" then
+            hostname_selection(socket)
+            send(socket, "chk")
+        elseif option == "10" then
+            write("Address: ")
+            local address = read()
+            local id = digitizer.digitize()
+            remBal(socket, 1)
+            send(socket, "send_mail:"..address..":"..id..":"..config.hostname)
+            send(socket, "chk")
+        end
+    else
+        if data_t == nil then
+            send(socket, "card_id:"..getCardID())
+            send(socket, "chk")
+        end
+        term.clear()
+        term.setCursorPos(1,1)
+        term.write("Balance: "..data_t.balance)
+        local word = data_t.username
+        local width, height = term.getSize()
+        term.setCursorPos(width - string.len(word), 1)
+        term.write(word)
+        local word = config.hostname
+        term.setCursorPos(width - string.len(word), height)
+        term.write(word)
+        printCentered("1. Send Mail", 1)
+        printCentered("2. Tranfer Money", 0)
+        printCentered(": ", -1)
+        local option = read()
+        if option == "1" then
+            write("Address: ")
+            local address = read()
+            local id = digitizer.digitize()
+            remBal(socket, 1)
+            send(socket, "send_mail:"..address..":"..id..":"..config.hostname)
+            send(socket, "chk")
+        elseif option == "2" then
+            write("Sender Username: ")
+            local username = read()
+            write("Amount: ")
+            local change = read()
+            send(socket, "transfer:"..getCardID()..":"..username..":"..change)
+            send(socket, "chk")
+        end
     end
 end
 
@@ -155,7 +206,7 @@ end
 
 function onStart()
     print("Connecting...")
-    local socket = connect("central.netfs")
+    local socket = connect("central.netfs", 5, 1, nil, "right")
     print("Connected.")
     enterDetails(socket)
 end
@@ -192,13 +243,7 @@ function onEvent(event)
         elseif split(event[2], ":")[1] == "recv_mail" then
             local id = split(event[2], ":")[2]
             local sender = split(event[2], ":")[3]
-            local dns_id = split(event[2], ":")[4]
-            if dn_id == dns_id then
-                digitizer.rematerialize(id)
-            end
-        elseif split(event[3], ":")[1] == "register_id" then
-            local id = split(event[3], ":")[2]
-            dn_id = id
+            digitizer.rematerialize(id)
         else
             send(event[3], getCardID())
         end
