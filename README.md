@@ -1,3 +1,3 @@
 Documentation at
 
-[docs](https://olliejohnson.github.io/networked-payments/)
+[docs](https://docs.oliverj.io)
