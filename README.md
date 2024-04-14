@@ -1,3 +1,3 @@
 Documentation at
 
-[docs](docs.oliverj.io)
+[docs](https://docs.oliverj.io)
