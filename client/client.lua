@@ -1,4 +1,5 @@
 require("cryptoNet")
+local digitizer = peripheral.find("digitizer")
 
 data_t = nil
 config = {}
@@ -67,10 +68,18 @@ end
 
 function menu(socket)
     term.clear()
-    if data_t ~= nil then
-        print("User: "..data_t.username.."\nBalance: "..data_t.balance.."\n")
+    if data_t ~= nil and config.hostname ~= nil then
+        print("User: "..data_t.username.."\nBalance: "..data_t.balance.."\nHostname: "..config.hostname.."\n")
     end
     print("1. Add Card\n2. Get Data\n3. Save Server Tables\n4. Load Server Tables (WARNING: Will delete unsaved data)\n5. Erase Server Tables (WARNING: Will erase a card data)\n6. Add Balance\n7. Remove Balance\n8. Send Money")
+    local submitted_host = false
+    if config.hostname ~= nil and not submitted_host then
+        submitted_host = true
+        hostname_selection(socket)
+    else
+        print("9. Set Hostname")
+    end
+    print("10. Send Mail")
     local option = read()
     if option == "1" then
         write("Username: ")
@@ -99,6 +108,15 @@ function menu(socket)
         local change = read()
         send(socket, "transfer:"..getCardID()..":"..username..":"..change)
         send(socket, "chk")
+    elseif option == "9" and config.hostname == nil then
+        hostname_selection(socket)
+        send(socket, "chk")
+    elseif option == "10" then
+        write("Address: ")
+        local address = read()
+        local id = digitizer.digitize()
+        send(socket, "send_mail:"..address..":"..id..":"..config.hostname)
+        send(socket, "chk")
     end
 end
 
@@ -115,23 +133,28 @@ function load(name)
     return textutils.unserialize(data)
     end
 
-function getAddress()
-    return config.address
+function getHostname()
+    return config.hostname
 end
 
-function setAddress(address)
-    config.address = address
+function setHostname(hostname)
+    config.hostname = hostname
 end
 
-function address_selection(socket)
-    write("Address: ")
-    local address = read()
-    send(socket, "set_path"..getAddress()..":"..address)
+function hostname_selection(socket)
+    if config.hostname ~= nil then
+        send(socket, "add_dns"..config.hostname)
+    else
+        write("Hostname: ")
+        local hostname = read()
+        config.hostname = hostname
+        send(socket, "add_dns"..hostname)
+    end
 end
 
 function onStart()
     print("Connecting...")
-    local socket = connect("central.netfs", 5, 1, nil, "right", "certAuth.key", false)
+    local socket = connect("central.netfs")
     print("Connected.")
     enterDetails(socket)
 end
@@ -165,6 +188,10 @@ function onEvent(event)
         elseif split(event[2], ":")[1] == "card_id" then
             writeCardID(split(event[2], ":")[2])
             send(event[3], "card_id:"..split(event[2], ":")[2])
+        elseif split(event[2], ":")[1] == "recv_mail" then
+            local id = split(event[2])[2]
+            local sender = split(event[2])[3]
+            digitizer.rematerialize(id)
         else
             send(event[3], getCardID())
         end

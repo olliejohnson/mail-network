@@ -38,12 +38,10 @@ end
 
 function loadTables()
     card_table = load("card.tbl")
-    dns_table = load("dns.tbl")
 end
 
 function saveTables()
     save(card_table, "card.tbl")
-    save(dns_table, "dns.tbl")
 end
 
 function onEvent(event)
@@ -57,7 +55,11 @@ function onEvent(event)
         if split(message, ":")[1] == "card_id" then
             local id = split(message, ":")[2]
             local card_data = card_table[id]
-            send(socket, "card_data:"..textutils.serialize(card_data))
+            print("ID: "..id)
+            print("Card Data: "..textutils.serialize(card_data))
+            if card_data ~= nil then
+                send(socket, "card_data:"..textutils.serialize(card_data))
+            end
         elseif message == "save_tbl" then
             saveTables()
         elseif message == "load_tbl" then
@@ -81,10 +83,14 @@ function onEvent(event)
             }
             card_table[id] = data
             send(socket, "card_id:"..id)
-        elseif split(message, "|")[1] == "add_dns" then
-            local storage_id = split(message, "|")[2]
-            local name = split(message, "|")[3]
-            dns_table[name] = storage_id
+        elseif split(message, ":")[1] == "add_dns" then
+            local name = split(message, ":")[2]
+            dns_table[name] = socket
+        elseif split(message, ":")[1] == "send_mail" then
+            local name = split(message, ":")[2]
+            local sender = split(message, ":")[4]
+            local id = split(message, ":")[3]
+            send(dns_table[name], "recv_mail:"..id..":"..sender)
         elseif split(message, ":")[1] == "add_bal" then
             local id = split(message, ":")[2]
             local change = split(message, ":")[3]
