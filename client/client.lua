@@ -3,6 +3,8 @@ local digitizer = peripheral.find("digitizer")
 
 data_t = nil
 config = {}
+submitted_host = false
+dn_id = nil
 
 function enterDetails(socket)
     login(socket, "termpoint", "secureaccess")
@@ -72,7 +74,6 @@ function menu(socket)
         print("User: "..data_t.username.."\nBalance: "..data_t.balance.."\nHostname: "..config.hostname.."\n")
     end
     print("1. Add Card\n2. Get Data\n3. Save Server Tables\n4. Load Server Tables (WARNING: Will delete unsaved data)\n5. Erase Server Tables (WARNING: Will erase a card data)\n6. Add Balance\n7. Remove Balance\n8. Send Money")
-    local submitted_host = false
     if config.hostname ~= nil and not submitted_host then
         submitted_host = true
         hostname_selection(socket)
@@ -143,12 +144,12 @@ end
 
 function hostname_selection(socket)
     if config.hostname ~= nil then
-        send(socket, "add_dns"..config.hostname)
+        send(socket, "add_dns:"..config.hostname)
     else
         write("Hostname: ")
         local hostname = read()
         config.hostname = hostname
-        send(socket, "add_dns"..hostname)
+        send(socket, "add_dns:"..hostname)
     end
 end
 
@@ -189,9 +190,15 @@ function onEvent(event)
             writeCardID(split(event[2], ":")[2])
             send(event[3], "card_id:"..split(event[2], ":")[2])
         elseif split(event[2], ":")[1] == "recv_mail" then
-            local id = split(event[2])[2]
-            local sender = split(event[2])[3]
-            digitizer.rematerialize(id)
+            local id = split(event[2], ":")[2]
+            local sender = split(event[2], ":")[3]
+            local dns_id = split(event[2], ":")[4]
+            if dn_id == dns_id then
+                digitizer.rematerialize(id)
+            end
+        elseif split(event[3], ":")[1] == "register_id" then
+            local id = split(event[3], ":")[2]
+            dn_id = id
         else
             send(event[3], getCardID())
         end

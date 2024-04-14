@@ -42,6 +42,17 @@ end
 
 function saveTables()
     save(card_table, "card.tbl")
+    save(dns_table, "logs.tbl")
+end
+
+function uuid()
+    local random = math.random
+    local template = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'
+    local id = string.gsub(template, '[xy]', function (c)
+        local v = (c == 'x') and random(0, 0xf) or random(8, 0xb)
+        return string.format('%x', v)
+    end)
+    return id
 end
 
 function onEvent(event)
@@ -55,8 +66,6 @@ function onEvent(event)
         if split(message, ":")[1] == "card_id" then
             local id = split(message, ":")[2]
             local card_data = card_table[id]
-            print("ID: "..id)
-            print("Card Data: "..textutils.serialize(card_data))
             if card_data ~= nil then
                 send(socket, "card_data:"..textutils.serialize(card_data))
             end
@@ -70,12 +79,7 @@ function onEvent(event)
             saveTables()
         elseif split(message, ":")[1] == "add_card" then
             local m_split = split(message, ":")
-            local random = math.random
-            local template = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'
-            local id = string.gsub(template, '[xy]', function (c)
-                local v = (c == 'x') and random(0, 0xf) or random(8, 0xb)
-                return string.format('%x', v)
-            end)
+            local id = uuid()
             local username = m_split[2]
             data = {
                 username = username,
@@ -85,12 +89,19 @@ function onEvent(event)
             send(socket, "card_id:"..id)
         elseif split(message, ":")[1] == "add_dns" then
             local name = split(message, ":")[2]
-            dns_table[name] = socket
+            local id = uuid()
+            dns_table[name] = id
+            print("Registering ID: "..id)
+            send(socket, "register_id:"..id)
         elseif split(message, ":")[1] == "send_mail" then
             local name = split(message, ":")[2]
             local sender = split(message, ":")[4]
             local id = split(message, ":")[3]
-            send(dns_table[name], "recv_mail:"..id..":"..sender)
+            print(name)
+            print(sender)
+            for sock in pairs(getAllClientSockets()) do
+                send(sock, "recv_mail:"..id..":"..sender..":"..dns_table[name])
+            end
         elseif split(message, ":")[1] == "add_bal" then
             local id = split(message, ":")[2]
             local change = split(message, ":")[3]
