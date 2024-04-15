@@ -94,8 +94,8 @@ function onEvent(event)
             local name = split(message, ":")[2]
             local sender = split(message, ":")[4]
             local id = split(message, ":")[3]
+            print(message)
             print(sender.." -> "..name)
-            print(id)
             send(dns_table[name], "recv_mail:"..id..":"..sender)
         elseif split(message, ":")[1] == "add_bal" then
             local id = split(message, ":")[2]

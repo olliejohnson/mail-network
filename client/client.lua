@@ -82,6 +82,10 @@ end
 
 function menu(socket)
     term.clear()
+    if config.hostname ~= nil and not submitted_host then
+        submitted_host = true
+        hostname_selection(socket)
+    end
     if config.dev == true then
         if data_t ~= nil then
             print("User: "..data_t.username.."\nBalance: "..data_t.balance)
@@ -90,10 +94,6 @@ function menu(socket)
             print("Hostname: "..config.hostname.."\n")
         end
         print("1. Add Card\n2. Get Data\n3. Save Server Tables\n4. Load Server Tables (WARNING: Will delete unsaved data)\n5. Erase Server Tables (WARNING: Will erase a card data)\n6. Add Balance\n7. Remove Balance\n8. Send Money")
-        if config.hostname ~= nil and not submitted_host then
-            submitted_host = true
-            hostname_selection(socket)
-        end
         print("9. Set Hostname")
         print("10. Send Mail")
         local option = read()
