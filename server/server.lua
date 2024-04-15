@@ -136,7 +136,7 @@ function onEvent(event)
             local z2 = split(remote_pos, ",")[3]
             local distance = math.sqrt((x1 - x2)^2 + (y1 - y2)^2 + (z1 - z2)^2)
             print("Distance: "..distance)
-            local b_mul = math.floor(distance/1000)
+            local b_mul = math.floor(distance/100)
             local cost = 2^b_mul
             print("Cost: "..cost)
             send(dns_table[sender], "charge_bal:"..cost)
