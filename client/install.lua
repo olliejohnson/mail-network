@@ -38,7 +38,7 @@ function writeHostname()
     write("Enter Hostname: ")
     local hostname = read()
     config.hostname = hostname
-    file = fs.open("config.tbl")
+    file = fs.open("config.tbl", "w")
     file.write(textutils.serialise(config))
     file.close()
 end

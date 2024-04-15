@@ -82,6 +82,10 @@ end
 
 function menu(socket)
     term.clear()
+    if config.hostname ~= nil and not submitted_host then
+        submitted_host = true
+        hostname_selection(socket)
+    end
     if config.dev == true then
         if data_t ~= nil then
             print("User: "..data_t.username.."\nBalance: "..data_t.balance)
@@ -90,10 +94,6 @@ function menu(socket)
             print("Hostname: "..config.hostname.."\n")
         end
         print("1. Add Card\n2. Get Data\n3. Save Server Tables\n4. Load Server Tables (WARNING: Will delete unsaved data)\n5. Erase Server Tables (WARNING: Will erase a card data)\n6. Add Balance\n7. Remove Balance\n8. Send Money")
-        if config.hostname ~= nil and not submitted_host then
-            submitted_host = true
-            hostname_selection(socket)
-        end
         print("9. Set Hostname")
         print("10. Send Mail")
         local option = read()
@@ -131,8 +131,8 @@ function menu(socket)
             write("Address: ")
             local address = read()
             local id = digitizer.digitize()
-            remBal(socket, 1)
-            send(socket, "send_mail:"..address..":"..id..":"..config.hostname)
+            local x, y, z = gps.locate()
+            send(socket, "send_mail:"..address..":"..id..":"..config.hostname..":"..x..","..y..","..z)
             send(socket, "chk")
         end
     else
@@ -157,10 +157,10 @@ function menu(socket)
         if option == "1" then
             write("Address: ")
             local address = read()
+            local x, y, z = gps.locate()
+            local pos = x..","..y..","..z
             local id = digitizer.digitize()
-            remBal(socket, 1)
-            send(socket, "send_mail:"..address..":"..id..":"..config.hostname)
-            send(socket, "chk")
+            send(socket, "send_mail:"..address..":"..id..":"..config.hostname..":"..pos)
         elseif option == "2" then
             write("Sender Username: ")
             local username = read()
@@ -237,6 +237,7 @@ function onEvent(event)
             local data_tbl = textutils.unserialise(data)
             data_t = data_tbl
             writeCardName(data_tbl.username)
+            send(socket, "chk")
         elseif split(event[2], ":")[1] == "card_id" then
             writeCardID(split(event[2], ":")[2])
             send(event[3], "card_id:"..split(event[2], ":")[2])
@@ -244,6 +245,16 @@ function onEvent(event)
             local id = split(event[2], ":")[2]
             local sender = split(event[2], ":")[3]
             digitizer.rematerialize(id)
+        elseif split(event[2], ":")[1] == "charge_bal" then
+            local amount = split(event[2], ":")[2]
+            remBal(event[3], amount)
+        elseif split(event[2], ":")[1] == "req_location" then
+            local sender = split(event[2], ":")[2]
+            local pos = split(event[2], ":")[3]
+            local x, y, z = gps.locate()
+            send(event[3], "resp_location:"..pos..":"..x..","..y..","..z..":"..sender)
+        elseif event[2] == "reload" then
+            send(event[3], "chk")
         else
             send(event[3], getCardID())
         end

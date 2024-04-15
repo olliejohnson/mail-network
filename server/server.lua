@@ -94,8 +94,11 @@ function onEvent(event)
             local name = split(message, ":")[2]
             local sender = split(message, ":")[4]
             local id = split(message, ":")[3]
+            local pos = split(message, ":")[5]
+            print("Recived loc: "..pos)
             print(sender.." -> "..name)
             print(id)
+            send(dns_table[name], "req_location:"..sender..":"..pos)
             send(dns_table[name], "recv_mail:"..id..":"..sender)
         elseif split(message, ":")[1] == "add_bal" then
             local id = split(message, ":")[2]
@@ -119,6 +122,23 @@ function onEvent(event)
                     card_table[getId(username)].balance = card_table[getId(username)].balance + tonumber(change)
                 end
             end
+        elseif split(message, ":")[1] == "resp_location" then
+            local origin_pos = split(message, ":")[2]
+            local remote_pos = split(message, ":")[3]
+            local sender = split(message, ":")[4]
+            print("Recived: "..origin_pos.." and "..remote_pos)
+            local x1 = split(origin_pos, ",")[1]
+            local y1 = split(origin_pos, ",")[2]
+            local z1 = split(origin_pos, ",")[3]
+            local x2 = split(remote_pos, ",")[1]
+            local y2 = split(remote_pos, ",")[2]
+            local z2 = split(remote_pos, ",")[3]
+            local distance = math.sqrt((x1 - x2)^2 + (y1 - y2)^2 + (z1 - z2)^2)
+            print("Distance: "..distance)
+            local b_mul = math.floor(distance/1000)
+            local cost = 2^b_mul
+            print("Cost: "..cost)
+            send(dns_table[sender], "charge_bal:"..cost)
         else
             if socket.username ~= nil then
                 send(socket, "accept_")
