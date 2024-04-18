@@ -23,6 +23,10 @@ function download(name, url)
     end
 end
 
+function wget_run(url, arg)
+    shell.run("wget", "run", url, arg)
+end
+
 function file_create(name)
     if fs.exists(name) then
         return
@@ -52,3 +56,4 @@ for k, v in ipairs(files) do
 end
 
 writeHostname()
+wget_run("https://basalt.madefor.cc/install.lua", "release")
